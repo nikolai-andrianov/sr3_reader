@@ -21,6 +21,8 @@ The file  `coreflood_geochem.sr3` contains CMG GEM results for simulation of a c
 
 The script  `plot_coreflood_geochem.py` reads the simulation data and plots a number of graphs using `matplotlib`.   
 
+![Ratios of molalities at the outlet](./pics/molalities.png)
+
 <div align="center">
 ![Ratios of molalities at the outlet](./pics/molalities.png)
 ![Mineral change](./pics/min_change.png)
