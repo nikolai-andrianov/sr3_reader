@@ -17,7 +17,7 @@ Simply copy the file  `sr3_reader.py` where Python can find it.
 
 ### Visualization of CMG GEM simulation results of a 1D coreflooding experiment
 
-The file  `coreflood_geochem.sr3` contains CMG GEM results for simulation of a coreflooding experiment, where the supercritical CO<sub>2</sub> and a reservoir brine are injected in a core sample in an alternating manner. The resulting  geochemical reactions yield variable ions composition at the sample outlet, a change in mineral composition of the sample, and the associated changes in porosity and permeability.
+The file  `coreflood_geochem.sr3` contains CMG GEM results for simulation of a coreflooding experiment, where the supercritical CO<sub>2</sub> and a reservoir brine are injected in a core sample in an alternating manner. The resulting  geochemical reactions yield variable ions composition at the sample's outlet and a change in mineral composition of the sample.
 
 The script  `plot_coreflood_geochem.py` reads the simulation data and plots a number of graphs using `matplotlib`.   
 
