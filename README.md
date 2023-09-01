@@ -22,20 +22,15 @@ The file  `coreflood_geochem.sr3` contains CMG GEM results for simulation of a c
 The script  `plot_coreflood_geochem.py` reads the simulation data and plots a number of graphs using `matplotlib`.   
 
 ![Ratios of molalities at the outlet](./pics/molalities.png)
-
-<div align="center">
-![Ratios of molalities at the outlet](./pics/molalities.png)
 ![Mineral change](./pics/min_change.png)
-</div>
+
 (The pink stripes in the images above denote the CO<sub>2</sub> injection periods.)
 
 ## Visualization of CMG GEM results on a 3D Cartesian grid  
 
 The file  `cartesian_grid_example.sr3` contains CMG GEM results for simulation of a CO2 flooding in a Cartesian reservir with wells (inspired by a template from a CMG GEM distribution). The script `plot_cartesian_grid.py` reads the simulation data and plots a snapshot of pressure at the start of the simulation using  `pyvista`.
 
-<div align="center">
 ![Ratios of molalities at the outlet](pics/cartesian_grid.png)
-</div>
 
 ## Disclaimer
 
