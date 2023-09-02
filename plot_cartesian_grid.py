@@ -56,7 +56,7 @@ grid.hide_cells(sr3.grid.cells.inactive, inplace=True)
 # Initialize the pyvista plotter
 pl = pv.Plotter()
 
-# Identify the completed cells as
+# Identify the completed cells 
 for well, comp in wells_comp.items():
     points = []
     top_comp = None

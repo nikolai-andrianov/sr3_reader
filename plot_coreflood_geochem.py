@@ -34,56 +34,11 @@ list_min = ','.join(minerals)
 print('Available molalities: ' + list_mol)
 print('Available minerals: ' + list_min)
 
-# The grid centers from a vertically (z-direction) located sample
-x = sr3.grid.cells.centroids[2, :]
-# Get the distance from the top
-x = x - x[0]
-
-# Convert x to cm
-assert sr3.units['Length'] == 'm'
-x = x * 100
-
-# Get the time-dependent spatially-distributed porosity, permeability at start,
-# and the water permeability resistance factor (RFW)
-(sp_ind, sp) = get_spatial_properties(sr3, ['POROS', 'PERMK', 'RFW'])
+# Get the molalities
+(sp_ind, sp) = get_spatial_indexed(sr3, 'MOLALITY', molalities)
 
 # The time steps, at which the spatially-ditributed data is available
 t_sp = sr3.times['Days'].iloc[sp_ind]
-
-# Plot vs x at selected time instants
-i_plot = np.arange(0, len(t_sp), len(t_sp) // 8)
-
-poro = np.mean(sp['POROS'], axis=1)
-perm0 = np.mean(sp['PERMK'], axis=1)
-rfw = np.mean(sp['RFW'], axis=1)
-perm = np.divide(perm0, rfw)
-# Convert permeability to mD
-assert sr3.units['Permeability'] == 'darcy'
-perm *= 1000
-props = [poro, perm]
-
-# Plotting the average porosity & permeability vs time
-labels = ['Porosity', 'Permeability (mD)']
-figt, axst = pyplot.subplots(len(props), 1, num=1)
-for n, (p, label) in enumerate(zip(props, labels)):
-    axst[n].plot(t_sp, p, label=label)
-    axst[n].legend()
-    axst[n].xaxis.set_tick_params(labelbottom=False)
-
-    # Plot the injection periods on the right y-axes
-    ax2 = axst[n].twinx()
-    ax2.fill_between(wells_ts['CO2-Injector']['Days'],
-                     1 - wells_ts['CO2-Injector']['WELLSTATE'], color='red',
-                     alpha=0.1)
-    ax2.set_yticks([])
-    ax2.xaxis.set_tick_params(labelbottom=False)
-
-axst[-1].xaxis.set_tick_params(labelbottom=True)
-axst[-1].set_xlabel('Time (' + sr3.units['Time'] + ')')
-pyplot.show(block=False)
-
-# Get the molalities
-(sp_ind, sp) = get_spatial_indexed(sr3, 'MOLALITY', molalities)
 
 # Plot the ratios of molalities to the molality of Cl- in the cell (inlet is the last cell #30, outlet is the first cell #1)
 cell = 1
@@ -111,8 +66,8 @@ if 'Cl-' in molalities:
     axstr[-1].xaxis.set_tick_params(labelbottom=True)
     axstr[-1].set_xlabel('Time (' + sr3.units['Time'] + ')')
     axstr[0].set_title('Ratios of molalities at the outlet')
-    figtr.set_figwidth(10)
-    figtr.set_figheight(10)
+    #figtr.set_figwidth(10)
+    #figtr.set_figheight(10)
     pyplot.show(block=False)
 
 
