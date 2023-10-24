@@ -100,6 +100,18 @@ class RawHDF:
         # No return so that the visit function is recursive
 
 
+class Completion:
+    """
+    A completion is associated with the (i,j,k) index of the connected grid cell, and with the timeseries data
+    """
+
+    def __init__(self, ijk):
+        # Index of the connected grid cell
+        self.ijk = ijk
+        # Time series data
+        self.data = pd.DataFrame()
+
+
 def read_SR3(infile, timeout=60):
     """
     Reads the specified SR3 file and returns an instance of the RawHDF class with all the datasets from infile,
@@ -257,6 +269,118 @@ def get_wells_timeseries(sr3):
 
     return wells
 
+
+def get_layers_timeseries(sr3):
+    """
+    Returns the timeseries for the available layers.
+    """
+
+    # Make sure that LAYERS datasets are available
+    layers_datasets = ['TimeSeries/LAYERS/Origins', 'TimeSeries/LAYERS/Variables',
+                      'TimeSeries/LAYERS/Data', 'TimeSeries/LAYERS/Timesteps']
+    for name in layers_datasets:
+        if not name in sr3.names:
+            print(name + ' is not available..')
+            return None
+
+    layers_names = []
+    for name in sr3.data['TimeSeries/LAYERS/Origins']:
+        name_str = str(name)
+        layers_names.append(name_str.split('\'')[1])
+
+    # Extract variable names from the byte strings of the format (b'NAME',)
+    var_name = []
+    for name in sr3.data['TimeSeries/LAYERS/Variables']:
+        name_str = str(name)
+        var_name.append(name_str.split('\'')[1])
+
+    # Don't replace the indices in variable names with the corresponding components' names (for the moment).
+
+    # Read the data for all wells
+    data = sr3.data['TimeSeries/LAYERS/Data']
+
+    # Get the time instants when the well data is available
+    ts_ind = sr3.data['TimeSeries/LAYERS/Timesteps']
+    t_sp = sr3.times['Days'].iloc[ts_ind]
+
+    # Transform the data as dataframes for separate wells
+    layers = {}
+    for n, wn in enumerate(layers_names):
+
+        # Augment data with time in days
+        assert (len(t_sp) == data.shape[0])
+        layers_data = np.c_[t_sp, data[:, :, n]]
+
+        # Return a dataframe, indexed with date
+        layers[wn] = pd.DataFrame(data=layers_data, index=t_sp, columns=['Days'] + var_name)
+
+    return layers
+
+
+def get_completions_timeseries(sr3):
+    """
+    Returns the timeseries for the available completions.
+
+    Apparently completions in SR3 are represented as LAYERS with the names in the format <well_name>{ic,jc,kc}, where
+    ic, jc, and kc are the indices of the grid block, connected to the well_name.
+    """
+
+    # Make sure that LAYERS datasets are available
+    layers_datasets = ['TimeSeries/LAYERS/Origins', 'TimeSeries/LAYERS/Variables',
+                      'TimeSeries/LAYERS/Data', 'TimeSeries/LAYERS/Timesteps']
+    for name in layers_datasets:
+        if not name in sr3.names:
+            print(name + ' is not available..')
+            return None
+
+    layers_names = []
+    for name in sr3.data['TimeSeries/LAYERS/Origins']:
+        name_str = str(name)
+        layers_names.append(name_str.split('\'')[1])
+
+    # Extract variable names from the byte strings of the format (b'NAME',)
+    # Don't replace the indices in variable names with the corresponding components' names (for the moment).
+    var_name = []
+    for name in sr3.data['TimeSeries/LAYERS/Variables']:
+        name_str = str(name)
+        var_name.append(name_str.split('\'')[1])
+
+    # Get the time instants when the well data is available
+    ts_ind = sr3.data['TimeSeries/LAYERS/Timesteps']
+    t_sp = sr3.times['Days'].iloc[ts_ind]
+
+    # Read the data for all completions
+    data = sr3.data['TimeSeries/LAYERS/Data']
+    assert (len(t_sp) == data.shape[0])
+
+    # Extract well names and completion indices from layers_names (which have the format format <well_name>{ic,jc,kc})
+    # and create the completions structure
+    completions = {}
+    for n, ln in enumerate(layers_names):
+        try:
+            # Parse layers_names
+            wn = ln.split('{')[0]
+            comp = ln.split('{')[1]
+            comp = comp.split('}')[0]
+            comp = comp.split(',')
+            ind = [int(c) for c in comp]
+        except:
+            raise ValueError('Cannot extract wells and completion indices from ' + ln)
+
+        # Write the well completions
+        if wn not in completions:
+            completions[wn] = []
+
+        # Add the information on the connected block to the current completion
+        completions[wn].append(Completion(ind))
+
+        # Add the timeseries data, augmented with time in days
+        layers_data = np.c_[t_sp, data[:, :, n]]
+
+        # Return a dataframe, indexed with date
+        completions[wn][-1].data = pd.DataFrame(data=layers_data, index=t_sp, columns=['Days'] + var_name)
+
+    return completions
 
 
 def get_wells_completions(sr3):
@@ -488,7 +612,7 @@ def get_grid(sr3):
     if len(sp['GRID/NODES']) > 0:
         print('Corner-point grid format detected, the grid geometry might not be visualized properly...')
 
-    (sp_ind, sp) = get_spatial_properties(sr3, ['GRID/BLOCKDEPTH', 'GRID/BLOCKSIZE', 'GRID/BVOL',
+    (sp_ind, sp) = get_spatial_properties(sr3, ['GRID/BLOCKDEPTH', 'GRID/BLOCKSIZE', # 'GRID/BVOL',
                                                 'GRID/IGNTFR', 'GRID/IGNTGT', 'GRID/IGNTID', 'GRID/IGNTJD',
                                                 'GRID/IGNTKD', 'GRID/IGNTNC', 'GRID/IGNTNS', 'GRID/IGNTZA'],
                                                  activeonly=False)
@@ -506,7 +630,7 @@ def get_grid(sr3):
     size = np.array(sp['GRID/BLOCKSIZE'][0])
 
     # Array dimensons do not match at least in the case of dual porosity (gmgmc080.sr3)
-    volumes = np.array(sp['GRID/BVOL'][0])
+    #volumes = np.array(sp['GRID/BVOL'][0])
 
     # Get the block dimensions
     dx = size[0::3]
