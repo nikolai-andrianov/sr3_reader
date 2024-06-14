@@ -64,7 +64,7 @@ for well, comp in wells_comp.items():
         # Get the global id of the cell
         cell_id = grid.cell_id(cell)
         # Get the coordinates of the cell center
-        cv = grid.cell[cell_id].points
+        cv = list(grid.cell)[cell_id].points
         center = np.mean(cv, axis=0)
         points.append(center)
         # Find the coordinates of the top completion
