@@ -65,6 +65,8 @@ class RawHDF:
         self.timeout = timeout
         # Time instants
         self.times = pd.DataFrame()
+        # Indices of time instants, which correspond to valid dates
+        self.valid_dates_ind = []
         # Component names
         self.comp_name = []
         # Names of spatial properties
@@ -132,8 +134,8 @@ def read_SR3(infile, timeout=60):
     assert ('General/MasterTimeTable' in sr3.data)
     td = []
     date = []
-    for t in sr3.data['General/MasterTimeTable']:
-        td.append(t[1])
+    shift = 0
+    for n, t in enumerate(sr3.data['General/MasterTimeTable']):
         day = math.floor(t[2])
         frac = t[2] % 1
         hour = math.floor(frac * 24)
@@ -142,8 +144,22 @@ def read_SR3(infile, timeout=60):
         frac = (frac * 60) % 1
         second = math.floor(frac * 60)
         date_str = str(day) + ' ' + str(hour) + ':' + str(minute) + ':' + str(second)
-        dt = datetime.strptime(date_str, "%Y%m%d %H:%M:%S")
-        date.append(dt)
+
+        # Append the dates only if they can be converted to datetime
+        try:
+            dt = datetime.strptime(date_str, "%Y%m%d %H:%M:%S")
+            td.append(t[1])
+            date.append(dt)
+            # Keep the corresponding 1-base index, shifted to account for the invalid dates
+            sr3.valid_dates_ind.append(n + shift)
+        except:
+            # Error can be e.g. when a non-existing date is encountered - such as 20260229
+            print('Skipping the encountered non-valid date ' + date_str)
+            # Do not add the corresponding time instant to SR3 and indicate the corresponding index with -1
+            sr3.valid_dates_ind.append(-1)
+            # The indices after an encountered invalid dates are shifted downwards
+            shift -= 1
+
 
     sr3.times['Date'] = date
     sr3.times['Days'] = td
@@ -516,8 +532,13 @@ def get_spatial_properties(sr3, sel_names, activeonly=True, verbose=True):
                         i = int(ind_time)
                     except:
                         raise ValueError('Cannot convert the index ' + ind_time + ' for the component ' + name)
+                    # Only get the spatial index if it has not been already included and if it does not correspond to
+                    # an invalid dates
                     if i not in sp_ind:
-                        sp_ind.append(i)
+                        #sp_ind.append(i)
+                        vi = sr3.valid_dates_ind[i]
+                        if vi != -1:
+                            sp_ind.append(vi)
 
                     # Accumulate the spatial distribution at the current time step
                     prop.append(sr3.data[key])
