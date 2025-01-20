@@ -165,9 +165,16 @@ def read_SR3(infile, timeout=60):
     sr3.times['Days'] = td
 
     # Augment the raw SR3 data with the component names, which are byte strings of the format (b'NAME',)
-    for name in sr3.data['General/ComponentTable']:
-        name_str = str(name)
-        sr3.comp_name.append(name_str.split('\'')[1])
+    # After populating sr3.data, do this check for example IMEX does not have a component table:
+    if 'General/ComponentTable' in sr3.data:
+        # The file is compositional and has a ComponentTable
+        for name in sr3.data['General/ComponentTable']:
+            name_str = str(name)
+            sr3.comp_name.append(name_str.split('\'')[1])
+    else:
+        # The file does not have a compositional table (e.g., black-oil run)
+        sr3.comp_name = []
+
 
     # Augment the raw SR3 data with the names of spatial properties
     for key in sr3.data:
